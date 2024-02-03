@@ -140,7 +140,7 @@ public class DeploymentTool extends Application {
     private int executeMavenPackage(String projectPath, TextArea outputArea) {
         try {
             ProcessBuilder builder = new ProcessBuilder();
-            builder.command("cmd.exe", "/c", "mvn clean package -Dspring.profiles.active=home");
+            builder.command("cmd.exe", "/c", "mvn clean package -Dspring.profiles.active=home -DskipTests");
             builder.directory(new File(projectPath));
 
             builder.redirectErrorStream(true); // 将错误信息和输出信息合并

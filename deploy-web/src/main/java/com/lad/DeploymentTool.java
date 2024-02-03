@@ -12,10 +12,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
+
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+
 import java.util.Vector;
 
 
@@ -34,13 +33,23 @@ public class DeploymentTool extends Application {
 
 
     // 本地项目路径默认值
-    private String LOCAL_PATH_DEFAULT = "D:\\mine\\Project\\skyherb-qims\\skyhub-qims-front";
+    private String LOCAL_PATH_DEFAULT = "D:\\mine\\Project\\skyherb-qims\\skyhub-qims-front\\dist";
     // 服务器项目路径默认值
     private String SERVER_PATH_DEFAULT = "/var/www/river-skyherb/skyherb-qims-front/";
 
     @Override
     public void start(Stage primaryStage) {
+        Label hostLabel = new Label("主机地址:");
+        TextField hostField = new TextField(HOST);
+        hostField.setPromptText("请输入主机地址");
 
+        Label usernameLabel = new Label("用户名:");
+        TextField usernameField = new TextField(USERNAME);
+        usernameField.setPromptText("请输入用户名");
+
+        Label passwordLabel = new Label("密码:");
+        TextField passwordField = new TextField(PASSWORD);
+        passwordField.setPromptText("请输入密码");
 
         Label localPathLabel = new Label("本地项目路径:");
         TextField localPathField = new TextField(LOCAL_PATH_DEFAULT);
@@ -62,14 +71,17 @@ public class DeploymentTool extends Application {
         deployButton.setOnAction(e -> {
             String localPath = localPathField.getText();
             String serverPath = serverPathField.getText();
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            String host = hostField.getText();
 
-            new Thread(() -> buttonFunction(outputArea, localPath, serverPath)).start();
+            new Thread(() -> buttonFunction(outputArea, localPath, serverPath, username, password, host)).start();
         });
 
         // 创建布局并添加组件
         VBox layout = new VBox(10);
         layout.setPadding(new Insets(20));
-        layout.getChildren().addAll(localPathLabel, localPathField, serverPathLabel, serverPathField, outputArea, deployButton);
+        layout.getChildren().addAll(hostLabel, hostField, usernameLabel, usernameField, passwordLabel, passwordField, localPathLabel, localPathField, serverPathLabel, serverPathField, outputArea, deployButton);
 
         // 设置场景
         Scene scene = new Scene(layout, 600, 500);
@@ -87,33 +99,23 @@ public class DeploymentTool extends Application {
      * @param outputArea 输出区域
      * @param localPath  本地路径
      * @param serverPath 服务器路径
+     * @param username   用户名
+     * @param password   密码
+     * @param host       主机地址
      */
-    private void buttonFunction(TextArea outputArea, String localPath, String serverPath) {
+    private void buttonFunction(TextArea outputArea, String localPath, String serverPath, String username, String password, String host) {
         outputArea.appendText("部署开始...\n");
 
-        // 1. maven 打包
-        outputArea.appendText("开始执行 Maven 打包...\n");
-        int i = executeNpmBuild(localPath, outputArea);
-        // 等待0.2秒
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (i != 0) {
-            outputArea.appendText("Maven 打包失败\n");
-            outputArea.appendText("程序退出\n");
-            return;
-        }
 
-        // 2. 上传文件到服务器
+        //  上传文件到服务器
         outputArea.appendText("开始上传dist到服务器...\n");
-        String localDistPath = localPath + "/dist"; // 前端打包后的目录
-        File distDir = new File(localDistPath);
+
+        File distDir = new File(localPath);
         if (distDir.exists() && distDir.isDirectory()) {
             try {
-                Session session = createSession();
-                uploadDirectoryToServer(localDistPath, serverPath, outputArea, session);
+                // 创建 SSH 会话
+                Session session = createSession(username, password, host);
+                uploadDirectoryToServer(localPath, serverPath, outputArea, session);
                 // 等待0.2秒
                 try {
                     Thread.sleep(200);
@@ -126,44 +128,10 @@ public class DeploymentTool extends Application {
                 Platform.runLater(() -> outputArea.appendText("SSH会话创建失败: " + e.getMessage() + "\n"));
             }
         } else {
-            outputArea.appendText("未找到 'dist' 目录。\n");
+            outputArea.appendText("未在本地找到相应文件。\n");
             outputArea.appendText("程序退出\n");
         }
 
-    }
-
-
-    /**
-     * 执行 Maven 打包
-     *
-     * @param projectPath 项目路径
-     * @param outputArea  输出区域
-     * @return 执行结果 1-失败 0-成功
-     */
-    private int executeNpmBuild(String projectPath, TextArea outputArea) {
-        try {
-            ProcessBuilder builder = new ProcessBuilder();
-            builder.command("cmd.exe", "/c", "npm run build");
-            builder.directory(new File(projectPath));
-            builder.redirectErrorStream(true);
-
-            Process process = builder.start();
-
-            // 读取命令行输出
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String finalLine = line;
-                Platform.runLater(() -> outputArea.appendText(finalLine + "\n"));
-            }
-
-            int exitCode = process.waitFor();
-            Platform.runLater(() -> outputArea.appendText("打包完成，退出码: " + exitCode + "\n"));
-            return exitCode;
-        } catch (IOException | InterruptedException e) {
-            Platform.runLater(() -> outputArea.appendText("打包过程中出错: " + e.getMessage() + "\n"));
-            return 1;
-        }
     }
 
 
@@ -172,10 +140,10 @@ public class DeploymentTool extends Application {
      *
      * @return SSH 会话
      */
-    private Session createSession() throws JSchException {
+    private Session createSession(String username, String password, String host) throws JSchException {
         JSch jsch = new JSch();
-        Session session = jsch.getSession(USERNAME, HOST, PORT);
-        session.setPassword(PASSWORD);
+        Session session = jsch.getSession(username, host, PORT);
+        session.setPassword(password);
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect();
         return session;
@@ -185,17 +153,17 @@ public class DeploymentTool extends Application {
     /**
      * 上传文件到服务器
      *
-     * @param localDistPath 本地dist路径
+     * @param localPath     本地dist路径
      * @param serverPath    服务器路径
      * @param outputArea    输出区域
      */
-    private void uploadDirectoryToServer(String localDistPath, String serverPath, TextArea outputArea, Session session) {
+    private void uploadDirectoryToServer(String localPath, String serverPath, TextArea outputArea, Session session) {
         try {
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
             // 获取本地目录名（这里是 "dist"）
-            File localDir = new File(localDistPath);
+            File localDir = new File(localPath);
             String dirName = localDir.getName();
 
             // 构建服务器上的目录路径
@@ -220,11 +188,11 @@ public class DeploymentTool extends Application {
             channelSftp.mkdir(serverDirPath);
             // 递归上传目录内容
             outputArea.appendText("文件上传中...\n");
-            uploadDirectory(channelSftp, localDistPath, serverDirPath, outputArea);
+            uploadDirectory(channelSftp, localPath, serverDirPath, outputArea);
 
             channelSftp.disconnect();
         } catch (JSchException | SftpException e) {
-            Platform.runLater(() -> outputArea.appendText("上传目录失败: " + e.getMessage() + "\n"));
+            Platform.runLater(() -> outputArea.appendText("上传目录失败: " + e.getMessage() + " : " + serverPath + "\n"));
         }
     }
 
