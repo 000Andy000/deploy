@@ -3,7 +3,6 @@ package com.lad;
 import com.jcraft.jsch.*;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -42,24 +41,24 @@ public class DeploymentTool extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Map<String, List<String>> historyMap = loadHistory();
+        List<History> histories = loadHistory();
 
         Label hostLabel = new Label("主机地址:");
-        ComboBox<String> hostField = createComboBox(HOST, "主机地址", historyMap);
+        ComboBox<String> hostField = createComboBox(HOST, "主机地址", histories);
 
         Label usernameLabel = new Label("用户名:");
-        ComboBox<String> usernameField = createComboBox(USERNAME, "用户名", historyMap);
+        ComboBox<String> usernameField = createComboBox(USERNAME, "用户名", histories);
 
 
         Label passwordLabel = new Label("密码:");
-        ComboBox<String> passwordField = createComboBox(PASSWORD, "密码", historyMap);
+        ComboBox<String> passwordField = createComboBox(PASSWORD, "密码", histories);
 
         Label localPathLabel = new Label("本地项目路径:");
-        ComboBox<String> localPathField = createComboBox(LOCAL_PATH, "本地项目路径", historyMap);
+        ComboBox<String> localPathField = createComboBox(LOCAL_PATH, "本地项目路径", histories);
 
 
         Label serverPathLabel = new Label("服务器项目路径:");
-        ComboBox<String> serverPathField = createComboBox(SERVER_PATH, "服务器项目路径", historyMap);
+        ComboBox<String> serverPathField = createComboBox(SERVER_PATH, "服务器项目路径", histories);
 
 
         // 创建文本区域用于输出信息
@@ -75,7 +74,7 @@ public class DeploymentTool extends Application {
         // 设置按钮的点击事件
         deployButton.setOnAction(e -> {
 
-            new Thread(() -> buttonFunction(outputArea, historyMap, fields)).start();
+            new Thread(() -> buttonFunction(outputArea, histories, fields)).start();
         });
 
         // 创建布局并添加组件
@@ -83,7 +82,7 @@ public class DeploymentTool extends Application {
         layout.setPadding(new Insets(20));
         layout.getChildren().addAll(hostLabel, hostField, usernameLabel, usernameField, passwordLabel, passwordField, localPathLabel, localPathField, serverPathLabel, serverPathField, outputArea, deployButton);
         // 设置场景
-        Scene scene = new Scene(layout, 600, 500);
+        Scene scene = new Scene(layout, 600, 650);
 
         // 配置舞台
         primaryStage.setTitle("前端自动化部署工具");
@@ -97,19 +96,24 @@ public class DeploymentTool extends Application {
      *
      * @param name       字段英文名
      * @param cnName     字段中文名
-     * @param historyMap
+     * @param histories
      * @return ComboBox<String>
      */
-    private ComboBox<String> createComboBox(String name, String cnName, Map<String, List<String>> historyMap) {
+    private ComboBox<String> createComboBox(String name, String cnName, List<History> histories) {
         ComboBox<String> field = new ComboBox<>();
         field.setEditable(true);
         field.setPromptText("请输入" + cnName);
+        field.setMinWidth(550);
         // 获取对应历史记录
-        List<String> history = historyMap.getOrDefault(name, FXCollections.observableArrayList());
-        if (!history.isEmpty()) {
-            field.setValue(history.get(0));
+        List<String> values = histories.stream()
+                .filter(history -> history.getName().equals(name))
+                .findFirst()
+                .map(History::getValues)
+                .orElse(Collections.emptyList());
+        if (!values.isEmpty()) {
+            field.setValue(values.get(0));
         }
-        field.getItems().addAll(history);
+        field.getItems().addAll(values);
         return field;
     }
 
@@ -117,10 +121,10 @@ public class DeploymentTool extends Application {
      * 按钮点击事件
      *
      * @param outputArea 输出区域
-     * @param historyMap 历史记录
+     * @param histories 历史记录
      * @param fields     五个字段的ComboBox
      */
-    private void buttonFunction(TextArea outputArea, Map<String, List<String>> historyMap, List<ComboBox<String>> fields) {
+    private void buttonFunction(TextArea outputArea, List<History> histories, List<ComboBox<String>> fields) {
 
         // 判断输入是否为空
         for (ComboBox<String> field : fields) {
@@ -141,7 +145,7 @@ public class DeploymentTool extends Application {
         outputArea.appendText("部署开始...\n");
 
         // 更新历史记录
-        updateHistory(historyMap, fields);
+        updateHistory(histories, fields);
 
 
         //  上传文件到服务器
@@ -307,38 +311,44 @@ public class DeploymentTool extends Application {
      *
      * @return 历史记录
      */
-    private static Map<String, List<String>> loadHistory() {
-        Map<String, List<String>> historyMap = new HashMap<>();
+    private static List<History> loadHistory() {
+        List<History> histories = new ArrayList<>();
         File file = new File(FILE_NAME);
         if (!file.exists()) {
-            return historyMap;
+            return histories;
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-            List<String> currentList = null;
+            // 生命一个空的History对象
+            History history = new History("", new ArrayList<>());
+
             while ((line = reader.readLine()) != null) {
+                // 如果是以 # 开头，则表示是一个新的历史记录，需要创建新的History对象，并添加到histories列表中
                 if (line.startsWith("#")) {
-                    currentList = historyMap.computeIfAbsent(line.substring(1), k -> new ArrayList<>());
-                } else if (currentList != null) {
-                    currentList.add(line);
+                    history = new History(line.substring(1), new ArrayList<>());
+                    histories.add(history);
+                } else {
+                    // 否则将当前行添加到最近一个History对象的values列表中
+                    history.getValues().add(line);
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return historyMap;
+        return histories;
     }
 
 
     /**
      * 更新历史记录。
      *
-     * @param historyMap 包含旧历史记录的Map。
+     * @param histories 包含旧历史记录的List
      * @param fields     五个字段的ComboBox 需要按照 HOST, USERNAME, PASSWORD, LOCAL_PATH, SERVER_PATH 的顺序
      */
-    public static void updateHistory(Map<String, List<String>> historyMap, List<ComboBox<String>> fields) {
-        // 确保values列表中的顺序与historyMap中的键匹配
+    public static void updateHistory(List<History> histories, List<ComboBox<String>> fields) {
+        // 确保fields列表中的顺序与keys列表中的顺序一致
         List<String> keys = Arrays.asList(HOST, USERNAME, PASSWORD, LOCAL_PATH, SERVER_PATH);
 
 
@@ -347,28 +357,41 @@ public class DeploymentTool extends Application {
             String value = fields.get(i).getValue();
 
             // 获取当前key的历史记录列表，如果不存在则创建新的列表
-            List<String> historyList = historyMap.computeIfAbsent(key, k -> new ArrayList<>());
+            List<String> values = histories.stream()
+                    .filter(history -> history.getName().equals(key))
+                    .findFirst()
+                    .map(History::getValues)
+                    .orElseGet(() -> {
+                        List<String> list = new ArrayList<>();
+                        histories.add(new History(key, list));
+                        return list;
+                    });
 
             // 如果列表已经包含当前值，则先移除
-            historyList.remove(value);
+            values.remove(value);
 
             // 将当前值添加到列表的开头
-            historyList.add(0, value);
+            values.add(0, value);
         }
         // 保存历史记录到文件
-        saveHistoryToFile(historyMap);
+        saveHistoryToFile(histories);
         // 更新fields中的历史记录
         for (int i = 0; i < keys.size(); i++) {
             final ComboBox<String> field = fields.get(i);
-            List<String> history = historyMap.getOrDefault(keys.get(i), new ArrayList<>());
+            int finalI = i;
+            List<String> values = histories.stream()
+                    .filter(history -> history.getName().equals(keys.get(finalI)))
+                    .findFirst()
+                    .map(History::getValues)
+                    .orElse(Collections.emptyList());
 
             // 将更新操作放在JavaFX主线程上执行
             Platform.runLater(() -> {
                 field.getItems().clear(); // 首先清除现有的项
-                if (!history.isEmpty()) {
-                    field.setValue(history.get(0)); // 设置默认值为最新的历史记录
+                if (!values.isEmpty()) {
+                    field.setValue(values.get(0)); // 设置默认值为最新的历史记录
                 }
-                field.getItems().addAll(history); // 添加所有历史记录
+                field.getItems().addAll(values); // 添加所有历史记录
             });
         }
     }
@@ -377,9 +400,9 @@ public class DeploymentTool extends Application {
     /**
      * 将历史记录保存到文件中。
      *
-     * @param history 包含历史记录的Map。
+     * @param histories 包含历史记录的List。
      */
-    public static void saveHistoryToFile(Map<String, List<String>> history) {
+    public static void saveHistoryToFile(List<History> histories) {
         try {
             File file = new File(FULL_PATH);
             if (!file.exists()) {
@@ -390,10 +413,10 @@ public class DeploymentTool extends Application {
             }
 
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
-                for (Map.Entry<String, List<String>> entry : history.entrySet()) {
-                    writer.write("#" + entry.getKey());
+                for (History history : histories) {
+                    writer.write("#" + history.getName());
                     writer.newLine();
-                    for (String value : entry.getValue()) {
+                    for (String value : history.getValues()) {
                         writer.write(value);
                         writer.newLine();
                     }
