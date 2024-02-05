@@ -27,7 +27,7 @@ public class DeploymentTool extends Application {
     private static final String DIRECTORY_PATH = System.getProperty("user.dir");
     private static final String FULL_PATH = DIRECTORY_PATH + File.separator + FILE_NAME;
 
-    // 五个变量对应的英文名
+    // 五个变量对应的英文名（也是history.txt文件中的标识）
     private static final String HOST = "host";
     private static final String USERNAME = "username";
     private static final String PASSWORD = "password";
@@ -94,8 +94,8 @@ public class DeploymentTool extends Application {
     /**
      * 创建一个hostField
      *
-     * @param name       字段英文名
-     * @param cnName     字段中文名
+     * @param name      字段英文名
+     * @param cnName    字段中文名
      * @param histories
      * @return ComboBox<String>
      */
@@ -121,7 +121,7 @@ public class DeploymentTool extends Application {
      * 按钮点击事件
      *
      * @param outputArea 输出区域
-     * @param histories 历史记录
+     * @param histories  历史记录
      * @param fields     五个字段的ComboBox
      */
     private void buttonFunction(TextArea outputArea, List<History> histories, List<ComboBox<String>> fields) {
@@ -302,10 +302,6 @@ public class DeploymentTool extends Application {
     }
 
 
-
-
-
-
     /**
      * 读取历史记录
      *
@@ -345,7 +341,7 @@ public class DeploymentTool extends Application {
      * 更新历史记录。
      *
      * @param histories 包含旧历史记录的List
-     * @param fields     五个字段的ComboBox 需要按照 HOST, USERNAME, PASSWORD, LOCAL_PATH, SERVER_PATH 的顺序
+     * @param fields    五个字段的ComboBox 需要按照 HOST, USERNAME, PASSWORD, LOCAL_PATH, SERVER_PATH 的顺序
      */
     public static void updateHistory(List<History> histories, List<ComboBox<String>> fields) {
         // 确保fields列表中的顺序与keys列表中的顺序一致
@@ -408,7 +404,7 @@ public class DeploymentTool extends Application {
             if (!file.exists()) {
                 file.createNewFile(); // 如果文件不存在，则创建新文件
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
-                    writer.write("#host"+ "\n"+ "#username"+ "\n"+ "#password"+ "\n"+ "#localPath"+ "\n"+ "#serverPath");
+                    writer.write("#" + HOST + "\n" + "#" + USERNAME + "\n" + "#" + PASSWORD + "\n" + "#" + LOCAL_PATH + "\n" + "#" + SERVER_PATH);
                 }
             }
 
@@ -426,7 +422,6 @@ public class DeploymentTool extends Application {
             e.printStackTrace();
         }
     }
-
 
 
     public static void main(String[] args) throws IOException {
