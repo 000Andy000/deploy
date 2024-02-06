@@ -32,18 +32,13 @@ public class DeploymentTool extends Application {
     private static final String HOST = "host";
     private static final String USERNAME = "username";
     private static final String PASSWORD = "password";
+    // 目标文件全路径
     private static final String LOCAL_PATH = "localPath";
+    // 服务器所要放到的文件夹
     private static final String SERVER_PATH = "serverPath";
 
     // 服务器信息
     private final int PORT = 22; // SSH 默认端口是 22
-
-	// jar包名称
-    private String JAR_NAME="qims-0.0.1-SNAPSHOT.jar";
-    // 本地项目路径默认值
-    private String LOCAL_PATH_DEFAULT = "D:\\mine\\Project\\skyherb-qims\\skyherb-qims";
-    // 服务器项目路径默认值
-    private String SERVER_PATH_DEFAULT = "/usr/local/river-skyherb/";
 
     @Override
     public void start(Stage primaryStage) {
@@ -132,13 +127,32 @@ public class DeploymentTool extends Application {
      * @param localPath 本地路径
      * @param serverPath 服务器路径
      */
-    private void buttonFunction(TextArea outputArea,String localPath,String serverPath,String jarName) {
+    private void buttonFunction(TextArea outputArea,List<History> histories, List<ComboBox<String>> fields) {
+
+        // 判断输入是否为空
+        for (ComboBox<String> field : fields) {
+            if (field.getValue() == null || field.getValue().isEmpty()) {
+                outputArea.appendText("请填写所有字段\n");
+                return;
+            }
+        }
+
+        // 获取输入的值
+        String host = fields.get(0).getValue();
+        String username = fields.get(1).getValue();
+        String password = fields.get(2).getValue();
+        String localPath = fields.get(3).getValue();
+        String serverPath = fields.get(4).getValue();
+
         outputArea.appendText("部署开始...\n");
 
+        // 更新历史记录
+        updateHistory(histories, fields);
 
 
-        // 上传文件到服务器
-        outputArea.appendText("开始上传文件到服务器...\n");
+
+        // 1. 上传文件到服务器
+        outputArea.appendText("开始上传到服务器...\n");
         // 获取 target 目录下的 jar 文件
         File targetDir = new File(localPath + "/target");
         File[] jarFiles = targetDir.listFiles((dir, name) -> name.endsWith(".jar"));
@@ -152,9 +166,9 @@ public class DeploymentTool extends Application {
             return;
         }
 
-        // 3. 重启后端服务
-        outputArea.appendText("开始重启后端服务...\n");
-        manageRemoteProcess(serverPath, outputArea, jarName);
+//        // 2. 重启后端服务
+//        outputArea.appendText("开始重启后端服务...\n");
+//        manageRemoteProcess(serverPath, outputArea, jarName);
     }
 
 
@@ -198,7 +212,6 @@ public class DeploymentTool extends Application {
             }
         }
     }
-
 
     /**
      * 远程进程重启

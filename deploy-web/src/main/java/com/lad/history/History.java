@@ -1,4 +1,4 @@
-package com.lad;
+package com.lad.history;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
