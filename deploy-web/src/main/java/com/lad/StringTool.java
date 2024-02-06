@@ -25,4 +25,16 @@ public class StringTool {
         return path.substring(path.lastIndexOf("\\") + 1);
     }
 
+    /**
+     * 移除末尾的反斜杠（如果有的话）后，获取到最后一级目录的目录名
+     * @param path 路径
+     * @return 目录名
+     */
+    public static String getWindowsFileName(String path) {
+        return path.substring(path.lastIndexOf("\\") + 1);
+    }
+
+
+
+
 }

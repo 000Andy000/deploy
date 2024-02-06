@@ -19,12 +19,21 @@ public class OutPutTool {
     }
 
     /**
-     * 在指定的输出区域中追加换行符
+     * 在指定的输出区域中追加分隔符
      *
      * @param outputArea 输出区域
      */
     public static void appendDivider(TextArea outputArea) {
         appendText(outputArea, "############################\n");
+    }
+
+    /**
+     * 在指定的输出区域中追加换行符
+     *
+     * @param outputArea 输出区域
+     */
+    public static void appendNewLine(TextArea outputArea) {
+        appendText(outputArea, "\n");
     }
 
     /**

@@ -23,19 +23,20 @@ public class DirUploader {
     static int num = 0;
 
     /**
-     * 通过SSH上传本地目录到服务器。
+     * 处理上层传来的数据，并创建SSH会话，上传本地目录到服务器。
      *
-     * @param fields  五个字段的ComboBox
+     * @param values  五个字段的ComboBox
      * @param outputArea 输出区域，用于显示操作信息
      */
-    public static void upload(List<ComboBox<String>> fields, TextArea outputArea) {
+    public static void upload(List<String> values, TextArea outputArea) {
         // 获取输入的值
-        String host = fields.get(0).getValue();
-        String username = fields.get(1).getValue();
-        String password = fields.get(2).getValue();
-        String localPath = fields.get(3).getValue();
-        String serverPath = fields.get(4).getValue();
+        String host = values.get(0);
+        String username = values.get(1);
+        String password = values.get(2);
+        String localPath = values.get(3);
+        String serverPath = values.get(4);
 
+        // 获取本地上传的文件夹名称
         String localDirName = StringTool.getWindowsDirName(localPath);
         OutPutTool.appendText(outputArea, "开始上传本地" + localDirName + "文件夹到服务器的" + serverPath + "目录下...\n");
 
@@ -57,10 +58,10 @@ public class DirUploader {
 
 
     /**
-     * 上传文件到服务器
+     * 开启通道并通过递归方法uploadDirectory来上传文件夹到服务器
      *
-     * @param localPath  本地dist路径
-     * @param serverPath 服务器路径
+     * @param localPath  本地文件夹路径
+     * @param serverPath 服务器存储路径（例如"/var/www/test/"或者"/var/www/test")
      * @param outputArea 输出区域
      * @param session    SSH 会话
      */
@@ -69,7 +70,7 @@ public class DirUploader {
             ChannelSftp channelSftp = (ChannelSftp) session.openChannel("sftp");
             channelSftp.connect();
 
-            // 获取本地目录名（这里是 "dist"）
+            // 获取本地目录名
             File localDir = new File(localPath);
             String dirName = localDir.getName();
 
@@ -125,8 +126,8 @@ public class DirUploader {
 
         for (File file : localDir.listFiles()) {
             if (file.isDirectory()) {
-                // 创建服务器上的目录并递归上传
                 try {
+                    // 创建服务器上的目录并递归上传
                     channelSftp.mkdir(serverPath + "/" + file.getName());
                 } catch (SftpException e) {
                     // 如果目录已经存在，则忽略错误
