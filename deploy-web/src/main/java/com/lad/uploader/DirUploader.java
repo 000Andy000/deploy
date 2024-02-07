@@ -4,9 +4,9 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
+import com.lad.server.SessionTool;
 import com.lad.ui.OutPutTool;
 import com.lad.StringTool;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 
 import java.io.File;
@@ -38,21 +38,21 @@ public class DirUploader {
 
         // 获取本地上传的文件夹名称
         String localDirName = StringTool.getWindowsDirName(localPath);
-        OutPutTool.appendText(outputArea, "开始上传本地" + localDirName + "文件夹到服务器的" + serverPath + "目录下...\n");
+        OutPutTool.appendText(outputArea, "开始上传本地" + localDirName + "文件夹到服务器的" + serverPath + "目录下...");
 
         File distDir = new File(localPath);
         if (distDir.exists() && distDir.isDirectory()) {
             try {
                 // 创建 SSH 会话
-                Session session = UploadHelper.createSession(username, password, host);
+                Session session = SessionTool.createSession(username, password, host);
                 uploadDirectoryToServer(localPath, serverPath, outputArea, session);
-                session.disconnect();
+                SessionTool.closeSession(session);
             } catch (JSchException e) {
-                OutPutTool.appendText(outputArea, "SSH会话创建失败: " + e.getMessage() + "\n");
+                OutPutTool.appendText(outputArea, "SSH会话创建失败: " + e.getMessage());
             }
         } else {
-            OutPutTool.appendText(outputArea, "未在本地找到名为" + localDirName + "的目录。\n");
-            OutPutTool.appendText(outputArea, "程序退出\n");
+            OutPutTool.appendText(outputArea, "未在本地找到名为" + localDirName + "的目录");
+            OutPutTool.appendText(outputArea, "程序退出");
         }
     }
 
@@ -78,25 +78,26 @@ public class DirUploader {
             String serverDirPath = serverPath + "/" + dirName;
 
             // 尝试删除服务器上现有的目录
-            OutPutTool.appendText(outputArea, "尝试删除服务器上的旧 '" + dirName + "' 目录…\n");
+            OutPutTool.appendText(outputArea, "尝试删除服务器上的旧 '" + dirName + "' 目录...");
             deleteDirectory(channelSftp, serverDirPath, outputArea);
-            OutPutTool.appendText(outputArea, "已删除服务器上的旧 '" + dirName + "' 目录\n");
+            OutPutTool.appendText(outputArea, "已删除服务器上的旧 '" + dirName + "' 目录");
 
             // 创建新的目录
             channelSftp.mkdir(serverDirPath);
             // 递归上传目录内容
-            OutPutTool.appendText(outputArea, "文件上传中，请耐心等待...\n");
+            OutPutTool.appendText(outputArea, "文件上传中，请耐心等待...");
             uploadDirectory(channelSftp, localPath, serverDirPath, outputArea);
             // 重置计数器num
             num = 0;
             // 关闭连接
             channelSftp.disconnect();
 
-            OutPutTool.appendText(outputArea, "\n上传完成\n");
+            OutPutTool.appendNewLine(outputArea);
+            OutPutTool.appendText(outputArea, "上传完成");
 
 
         } catch (JSchException | SftpException e) {
-            OutPutTool.appendText(outputArea, "上传目录失败: " + e.getMessage() + " : " + serverPath + "\n");
+            OutPutTool.appendText(outputArea, "上传目录失败: " + e.getMessage() + " : " + serverPath);
         }
     }
 
@@ -139,6 +140,7 @@ public class DirUploader {
                 OutPutTool.replaceText(outputArea, "已上传"+ ++num +"个文件，"+"最近一个上传的文件: " + file.getName());
             }
         }
+
     }
 
     /**
@@ -166,7 +168,7 @@ public class DirUploader {
             }
             channelSftp.rmdir(serverDirPath);
         } catch (SftpException e) {
-            OutPutTool.appendText(outputArea, "无法删除服务器上的 '" + dirName + "' 目录: " + e.getMessage() + "\n");
+            OutPutTool.appendText(outputArea, "无法删除服务器上的 '" + dirName + "' 目录: " + e.getMessage());
 
         }
     }

@@ -1,4 +1,4 @@
-package com.lad.uploader;
+package com.lad.server;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -8,7 +8,7 @@ import com.jcraft.jsch.Session;
  * @author Andy
  * @date 2024-2-6 006 15:25
  */
-public class UploadHelper {
+public class SessionTool {
     /**
      * 创建SSH会话
      *
@@ -25,5 +25,14 @@ public class UploadHelper {
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect();
         return session;
+    }
+
+    /**
+     * 关闭SSH会话
+     */
+    public static void closeSession(Session session) {
+        if (session != null) {
+            session.disconnect();
+        }
     }
 }

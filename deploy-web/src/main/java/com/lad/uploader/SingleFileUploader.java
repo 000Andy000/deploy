@@ -4,9 +4,9 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
+import com.lad.server.SessionTool;
 import com.lad.StringTool;
 import com.lad.ui.OutPutTool;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 
 import java.io.File;
@@ -23,8 +23,9 @@ public class SingleFileUploader {
      *
      * @param values 五个字段的value，分别是主机、用户名、密码、本地文件路径和服务器路径
      * @param outputArea 输出区域，用于显示操作信息
+     * @return 上传成功返回1，否则返回0
      */
-    public static void upload(List<String> values, TextArea outputArea) {
+    public static int upload(List<String> values, TextArea outputArea) {
         // 获取输入的值
         String host = values.get(0);
         String username = values.get(1);
@@ -34,26 +35,32 @@ public class SingleFileUploader {
 
         // 获取本地上传的文件名
         String localFileName = StringTool.getWindowsFileName(localPath);
-        OutPutTool.appendText(outputArea, "开始上传文件 " + localFileName + " 到服务器路径 " + serverPath + "目录下...\n");
+        OutPutTool.appendText(outputArea, "开始上传文件 " + localFileName + " 到服务器路径 " + serverPath + "目录下...");
 
         File localFile = new File(localPath);
         if (localFile.exists() && localFile.isFile()) {
             try {
                 // 创建 SSH 会话
-                Session session = UploadHelper.createSession(username, password, host);
+                Session session = SessionTool.createSession(username, password, host);
                 uploadFileToServer(localPath, serverPath, outputArea, session);
-                session.disconnect();
+                SessionTool.closeSession(session);
+                return 1;
+            } catch (RuntimeException e) {
+                OutPutTool.appendText(outputArea, e.getMessage() );
+                return 0;
             } catch (JSchException e) {
-                OutPutTool.appendText(outputArea, "SSH会话创建失败: " + e.getMessage() + "\n");
+                OutPutTool.appendText(outputArea, "SSH会话创建失败: " + e.getMessage());
+                return 0;
             }
         } else {
-            OutPutTool.appendText(outputArea, "未在本地找到文件 " + localFileName + "。\n");
-            OutPutTool.appendText(outputArea, "程序退出\n");
+            OutPutTool.appendText(outputArea, "未在本地找到文件 " + localFileName);
+            OutPutTool.appendText(outputArea, "程序退出");
+            return 0;
         }
     }
 
     /**
-     * 通过SSH会话上传文件到服务器。
+     * 通过SSH会话上传文件到服务器。（同名文件会自动覆盖）
      *
      * @param localFilePath 本地文件全路径
      * @param serverPath    服务器路径（例如"/var/www/test/"或者"/var/www/test")
@@ -67,15 +74,15 @@ public class SingleFileUploader {
 
             // 上传文件
             File file = new File(localFilePath);
-            String serverFilePath = serverPath + "/" + file.getName();
+            String serverFilePath = serverPath + file.getName();
             channelSftp.put(localFilePath, serverFilePath);
-            OutPutTool.appendText(outputArea, "文件 " + file.getName() + " 已成功上传到 " + serverFilePath + "\n");
+            OutPutTool.appendText(outputArea, "文件 " + file.getName() + " 已成功上传到 " + serverFilePath);
 
             // 关闭连接
             channelSftp.disconnect();
 
         } catch (JSchException | SftpException e) {
-            OutPutTool.appendText(outputArea, "上传文件失败: " + e.getMessage() + "\n");
+            throw new RuntimeException("上传文件失败: " + e.getMessage() + ": "+ serverPath);
         }
     }
 }

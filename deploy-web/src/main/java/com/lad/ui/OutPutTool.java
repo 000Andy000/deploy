@@ -15,7 +15,7 @@ public class OutPutTool {
      * @param s          要追加的文本
      */
     public static void appendText(TextArea outputArea, String s) {
-        Platform.runLater(() -> outputArea.appendText(s));
+        Platform.runLater(() -> outputArea.appendText("► " + s + "\n"));
     }
 
     /**
@@ -24,7 +24,7 @@ public class OutPutTool {
      * @param outputArea 输出区域
      */
     public static void appendDivider(TextArea outputArea) {
-        appendText(outputArea, "############################\n");
+        Platform.runLater(() -> outputArea.appendText("███████████████████████████████████████████████████████████████████████████\n"));
     }
 
     /**
@@ -33,7 +33,7 @@ public class OutPutTool {
      * @param outputArea 输出区域
      */
     public static void appendNewLine(TextArea outputArea) {
-        appendText(outputArea, "\n");
+        Platform.runLater(() -> outputArea.appendText("\n"));
     }
 
     /**
@@ -47,11 +47,11 @@ public class OutPutTool {
             int lastNewLineIndex = currentText.lastIndexOf("\n");
             if (lastNewLineIndex == -1) {
                 // 如果没有换行符，表示只有一行，直接替换
-                outputArea.setText(s);
+                outputArea.setText("█ " + s);
             } else {
                 // 存在换行符，替换最后一行
                 String beforeLastLine = currentText.substring(0, lastNewLineIndex + 1);
-                outputArea.setText(beforeLastLine + s);
+                outputArea.setText(beforeLastLine + "█ " + s);
             }
             scrollToBottom(outputArea);
         });

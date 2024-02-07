@@ -2,6 +2,7 @@ package com.lad;
 
 import com.lad.history.History;
 import com.lad.history.HistoryTool;
+import com.lad.server.ServerManager;
 import com.lad.ui.ComponentCreator;
 import com.lad.ui.OutPutTool;
 import com.lad.uploader.DirUploader;
@@ -14,8 +15,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-
-import java.io.*;
 
 import java.util.*;
 
@@ -59,6 +58,8 @@ public class DeploymentApp extends Application {
         // 创建文本区域用于输出信息
         TextArea outputArea = new TextArea();
         outputArea.setEditable(false);
+        outputArea.setPrefHeight(400);
+        outputArea.setPrefWidth(800);
         // 创建按钮
         Button deployButton = new Button("一键部署");
         // 创建布局并添加组件
@@ -76,7 +77,7 @@ public class DeploymentApp extends Application {
 
 
         // 设置场景
-        Scene scene = new Scene(layout, 600, 650);
+        Scene scene = new Scene(layout, 900, 850);
         // 配置舞台
         primaryStage.setTitle("自动化部署工具");
         primaryStage.setScene(scene);
@@ -105,19 +106,29 @@ public class DeploymentApp extends Application {
         // 判断输入是否为空
         for (ComboBox<String> field : fields) {
             if (field.getValue() == null || field.getValue().isEmpty()) {
-                OutPutTool.appendText(outputArea, "请填写所有字段\n");
+                OutPutTool.appendText(outputArea, "请填写所有字段");
                 return;
             }
         }
 
         // 获取输入的值
         List<String> values = new ArrayList<>();
+        // 第5个字段是服务器路径，需要在最后加上"/"（如果没有的话）
         for (ComboBox<String> field : fields) {
-            values.add(field.getValue());
+            if (field.equals(fields.get(4))) {
+                String value = field.getValue();
+                if (!value.endsWith("/")) {
+                    value += "/";
+                }
+                values.add(value);
+            } else {
+                // 其他字段直接添加
+                values.add(field.getValue());
+            }
         }
 
         OutPutTool.appendDivider(outputArea);
-        OutPutTool.appendText(outputArea, "开始部署！\n");
+        OutPutTool.appendText(outputArea, "开始部署！");
 
         // 更新历史记录
         HistoryTool.updateHistory(histories, fields);
@@ -156,6 +167,16 @@ public class DeploymentApp extends Application {
      */
     private void jarDeploy(TextArea outputArea, List<String> values) {
         // 上传文件到服务器
-        SingleFileUploader.upload(values, outputArea);
+        int flag = SingleFileUploader.upload(values, outputArea);
+
+        if (flag == 0) {
+            return;
+        }
+
+        // 重启后端服务
+        ServerManager.restartServer(values, outputArea);
     }
+
+
+
 }

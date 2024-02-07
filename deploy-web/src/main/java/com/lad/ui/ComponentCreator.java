@@ -24,7 +24,7 @@ public class ComponentCreator {
         ComboBox<String> field = new ComboBox<>();
         field.setEditable(true);
         field.setPromptText("请输入" + cnName);
-        field.setMinWidth(550);
+        field.setMinWidth(750);
         // 获取对应历史记录
         List<String> values = histories.stream()
                 .filter(history -> history.getName().equals(name))
