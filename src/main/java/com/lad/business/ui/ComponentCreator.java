@@ -1,6 +1,6 @@
-package com.lad.ui;
+package com.lad.business.ui;
 
-import com.lad.history.History;
+import com.lad.business.history.History;
 import javafx.scene.control.ComboBox;
 
 import java.util.Collections;

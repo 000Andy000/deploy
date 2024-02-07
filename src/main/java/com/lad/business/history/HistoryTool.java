@@ -1,4 +1,4 @@
-package com.lad.history;
+package com.lad.business.history;
 
 import javafx.application.Platform;
 import javafx.scene.control.ComboBox;

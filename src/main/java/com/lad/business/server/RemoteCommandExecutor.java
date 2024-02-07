@@ -1,10 +1,9 @@
-package com.lad.server;
+package com.lad.business.server;
 
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.lad.ui.OutPutTool;
-import javafx.application.Platform;
+import com.lad.business.ui.OutPutTool;
 import javafx.scene.control.TextArea;
 
 import java.io.IOException;

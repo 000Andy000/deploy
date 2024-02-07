@@ -1,4 +1,4 @@
-package com.lad;
+package com.lad.business;
 
 /**
  * @author Andy

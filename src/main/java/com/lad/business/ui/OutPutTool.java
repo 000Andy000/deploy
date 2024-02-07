@@ -1,4 +1,4 @@
-package com.lad.ui;
+package com.lad.business.ui;
 
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;

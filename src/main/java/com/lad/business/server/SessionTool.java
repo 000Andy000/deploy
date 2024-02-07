@@ -1,4 +1,4 @@
-package com.lad.server;
+package com.lad.business.server;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
