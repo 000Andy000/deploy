@@ -8,6 +8,7 @@ import com.lad.business.ui.OutPutTool;
 import com.lad.business.uploader.DirUploader;
 import com.lad.business.uploader.SingleFileUploader;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -86,9 +87,22 @@ public class DeploymentApp extends Application {
         // 六个字段的ComboBox List
         List<ComboBox<String>> fields = Arrays.asList(hostField, usernameField, passwordField, localPathField, serverPathField, deploymentTypeField);
 
-        // 设置按钮的点击事件
+// 设置按钮的点击事件
         deployButton.setOnAction(e -> {
-            new Thread(() -> buttonFunction(outputArea, histories, fields)).start();
+            // 禁用按钮
+            deployButton.setDisable(true);
+            deployButton.setText("部署中...");
+
+            // 创建并启动一个新的线程来执行耗时任务
+            new Thread(() -> {
+                // 在这个线程中执行相应的任务
+                buttonFunction(outputArea, histories, fields);
+
+                // 任务完成后，再次启用按钮
+                // 注意：这里使用Platform.runLater来确保以下代码在UI线程中执行
+                Platform.runLater(() -> deployButton.setDisable(false));
+                Platform.runLater(() -> deployButton.setText("一键部署"));
+            }).start();
         });
 
     }
