@@ -14,6 +14,10 @@ import java.util.List;
  * @date 2024-2-6 006 15:38
  */
 public class HistoryTool {
+    // 特殊标识符
+    public static final String SPECIAL_SYMBOL = "██████████";
+
+
     // 历史记录文件名
     private static final String FILE_NAME = "history.txt";
     private static final String DIRECTORY_PATH = System.getProperty("user.dir");
@@ -46,11 +50,11 @@ public class HistoryTool {
             History history = new History("", new ArrayList<>());
 
             while ((line = reader.readLine()) != null) {
-                // 如果是以 # 开头，则表示是一个新的历史记录，需要创建新的History对象，并添加到histories列表中
-                if (line.startsWith("#")) {
-                    history = new History(line.substring(1), new ArrayList<>());
+                // 如果是以 SPECIAL_SYMBOL 开头，则表示是一个新的历史记录，需要创建新的History对象，并添加到histories列表中
+                if (line.startsWith(SPECIAL_SYMBOL)) {
+                    history = new History(line.substring(SPECIAL_SYMBOL.length()), new ArrayList<>());
                     histories.add(history);
-                } else {
+                } else if (!line.isEmpty()) {
                     // 否则将当前行添加到最近一个History对象的values列表中
                     history.getValues().add(line);
                 }
@@ -129,19 +133,17 @@ public class HistoryTool {
             File file = new File(FULL_PATH);
             if (!file.exists()) {
                 file.createNewFile(); // 如果文件不存在，则创建新文件
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
-                    writer.write("#" + HOST + "\n" + "#" + USERNAME + "\n" + "#" + PASSWORD + "\n" + "#" + LOCAL_PATH + "\n" + "#" + SERVER_PATH);
-                }
             }
 
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, false))) {
                 for (History history : histories) {
-                    writer.write("#" + history.getName());
+                    writer.write(SPECIAL_SYMBOL + history.getName());
                     writer.newLine();
                     for (String value : history.getValues()) {
                         writer.write(value);
                         writer.newLine();
                     }
+                    writer.newLine();
                 }
             }
         } catch (IOException e) {
